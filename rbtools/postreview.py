@@ -2539,7 +2539,7 @@ class GitClient(SCMClient):
         
     def add_review_note(self, review_url):
         """ Adds a notes to the reviewed commits with the review url """
-        commits = _get_diff_commits(self):
+        commits = self._get_diff_commits()
         
         commit_note = "Reviewed at %s" % review_url
         for commit for commits:
@@ -2722,6 +2722,9 @@ class GitClient(SCMClient):
                 ["git", "log", "--pretty=format:%s%n%n%b",
                  (parent_branch or self.merge_base) + ".."],
                 ignore_errors=True).strip()
+                
+            # Add commits
+            options.description += "\n\n" + "\n".join(self._get_diff_commits())
 
         return (diff_lines, parent_diff_lines)
 
