@@ -2542,7 +2542,7 @@ class GitClient(SCMClient):
         commits = self._get_diff_commits()
         
         commit_note = "Reviewed at %s" % review_url
-        for commit for commits:
+        for commit in commits:
             existing_notes = execute["git", "notes", "show", commit]
             if existing_notes.find(review_url) < 0:
                 # Add new note
@@ -3726,7 +3726,7 @@ def main():
                             parent_diff_content=parent_diff,
                             submit_as=options.submit_as)
                             
-    if isinstance(tool, GitClient)) and options.add_review_note:
+    if isinstance(tool, GitClient) and options.add_review_note:
         tool.add_review_note(review_url)
 
     # Load the review up in the browser if requested to:
