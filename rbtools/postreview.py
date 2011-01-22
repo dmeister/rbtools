@@ -102,6 +102,8 @@ TARGET_PEOPLE   = None
 SUBMIT_AS       = None
 PUBLISH         = False
 OPEN_BROWSER    = False
+GUESS_SUMMARY   = False
+GUESS_DESCRIPTION = False
 ADD_REVIEW_NOTE = False
 
 # Debugging.  For development...
@@ -3490,12 +3492,12 @@ def parse_options(args):
                       help="text file containing a description of the review")
     parser.add_option("--guess-summary",
                       dest="guess_summary", action="store_true",
-                      default=False,
+                      default=GUESS_SUMMARY,
                       help="guess summary from the latest commit (git/"
                            "hg/hgsubversion only)")
     parser.add_option("--guess-description",
                       dest="guess_description", action="store_true",
-                      default=False,
+                      default=GUESS_DESCRIPTION,
                       help="guess description based on commits on this branch "
                            "(git/hg/hgsubversion only)")
     parser.add_option("--add-review-note",
