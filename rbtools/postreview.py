@@ -102,6 +102,7 @@ TARGET_PEOPLE   = None
 SUBMIT_AS       = None
 PUBLISH         = False
 OPEN_BROWSER    = False
+ADD_REVIEW_NOTE = False
 
 # Debugging.  For development...
 DEBUG           = False
@@ -2535,6 +2536,17 @@ class GitClient(SCMClient):
     def _strip_heads_prefix(self, ref):
         """ Strips prefix from ref name, if possible """
         return re.sub(r'^refs/heads/', '', ref)
+        
+    def add_review_note(self, review_url):
+        """ Adds a notes to the reviewed commits with the review url """
+        commits = _get_diff_commits(self):
+        
+        commit_note = "Reviewed at %s" % review_url
+        for commit for commits:
+            existing_notes = execute["git", "notes", "show", commit]
+            if existing_notes.find(review_url) < 0:
+                # Add new note
+                execute["git", "notes", "append", "-m", commit_note, commit]
 
     def get_repository_info(self):
         if not check_install('git --help'):
@@ -2674,6 +2686,15 @@ class GitClient(SCMClient):
                 return prop
 
         return None
+        
+    def _get_diff_commits(self):
+        if parent_branch:
+            rev_range = "%s..%s" % (self.merge_base, parent_branch)
+        else:
+            rev_range = "%s..%s" % (self.merge_base, self.head_ref)
+        
+        commits = [c.strip() for c in execute(["git", "log", r"--pretty=format:%H", rev_range]).split("\n")]
+        return commits    
 
     def diff(self, args):
         """
@@ -3474,6 +3495,9 @@ def parse_options(args):
                       default=False,
                       help="guess description based on commits on this branch "
                            "(git/hg/hgsubversion only)")
+    parser.add_option("--add-review-note",
+                      dest="add_review_note", default=ADD_REVIEW_NOTE,
+                      help="Adds a note that with the review id to the commits (git only)")
     parser.add_option("--testing-done",
                       dest="testing_done", default=None,
                       help="details of testing done ")
@@ -3698,6 +3722,9 @@ def main():
     review_url = tempt_fate(server, tool, changenum, diff_content=diff,
                             parent_diff_content=parent_diff,
                             submit_as=options.submit_as)
+                            
+    if isinstance(tool, GitClient)) and options.add_review_note:
+        tool.add_review_note(review_url)
 
     # Load the review up in the browser if requested to:
     if options.open_browser:
