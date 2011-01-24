@@ -2734,7 +2734,7 @@ class GitClient(SCMClient):
             for commit in self._get_diff_commits():
                 if REPO_URL:
                     repo_url = REPO_URL.replace("%H", commit)
-                    otions.description += repo_url + "\n"
+                    options.description += repo_url + "\n"
                 else:
                     options.description += "%s\n" % (commit)
 
