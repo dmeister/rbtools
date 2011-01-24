@@ -2730,7 +2730,7 @@ class GitClient(SCMClient):
                 ignore_errors=True).strip()
                 
             # Add commits
-            options.description += "\n\n":    
+            options.description += "\n\n"    
             for commit in self._get_diff_commits():
                 if REPO_URL:
                     repo_url = REPO_URL.replace("%H", commit)
