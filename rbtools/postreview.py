@@ -105,7 +105,7 @@ OPEN_BROWSER    = False
 GUESS_SUMMARY   = False
 GUESS_DESCRIPTION = False
 ADD_REVIEW_NOTE = False
-
+REPO_URL        = None
 # Debugging.  For development...
 DEBUG           = False
 
@@ -2545,10 +2545,10 @@ class GitClient(SCMClient):
         
         commit_note = "Reviewed at %s" % review_url
         for commit in commits:
-            existing_notes = execute["git", "notes", "show", commit]
+            existing_notes = execute(["git", "notes", "show", commit], ignore_errors=True)
             if existing_notes.find(review_url) < 0:
                 # Add new note
-                execute["git", "notes", "append", "-m", commit_note, commit]
+                execute(["git", "notes", "append", "-m", commit_note, commit])
 
     def get_repository_info(self):
         if not check_install('git --help'):
@@ -2690,10 +2690,14 @@ class GitClient(SCMClient):
         return None
         
     def _get_diff_commits(self):
-        if parent_branch:
-            rev_range = "%s..%s" % (self.merge_base, parent_branch)
+
+        merge_base = execute(["git", "merge-base", self.upstream_branch,
+                                   self.head_ref]).strip()
+
+        if options.parent_branch:
+            rev_range = "%s..%s" % (merge_base, options.parent_branch)
         else:
-            rev_range = "%s..%s" % (self.merge_base, self.head_ref)
+            rev_range = "%s..%s" % (merge_base, self.head_ref)
         
         commits = [c.strip() for c in execute(["git", "log", r"--pretty=format:%H", rev_range]).split("\n")]
         return commits    
@@ -2726,7 +2730,13 @@ class GitClient(SCMClient):
                 ignore_errors=True).strip()
                 
             # Add commits
-            options.description += "\n\n" + "\n".join(self._get_diff_commits())
+            options.description += "\n\n":    
+            for commit in self._get_diff_commits():
+                if REPO_URL:
+                    repo_url = REPO_URL.replace("%H", commit)
+                    otions.description += repo_url + "\n"
+                else:
+                    options.description += "%s\n" % (commit)
 
         return (diff_lines, parent_diff_lines)
 
@@ -3332,7 +3342,6 @@ def load_config_file(filename):
         except SyntaxError, e:
             die('Syntax error in config file: %s\n'
                 'Line %i offset %i\n' % (filename, e.lineno, e.offset))
-
     return config
 
 
@@ -3648,6 +3657,26 @@ def determine_client():
 
     return (repository_info, tool)
 
+def merge_config():
+    import re
+    
+    ucp = re.compile(r"[A-Z_]+")
+    mod = sys.modules[__name__]
+    merged_keys = set()
+
+    def merge_config_file(file_config):
+        for (k,v) in file_config.items():
+            if k in dir(mod) and ucp.match(k) and k not in merged_keys:
+                mod.__dict__[k] = v
+                merged_keys.add(k)
+
+    merge_config_file(user_config)
+
+    for path in walk_parents(os.getcwd()):
+        filename = os.path.join(path, ".reviewboardrc")
+        if os.path.exists(filename):
+            config = load_config_file(filename)
+            merge_config_file(config)
 
 def main():
     origcwd = os.path.abspath(os.getcwd())
@@ -3662,6 +3691,7 @@ def main():
     # Load the config and cookie files
     globals()['user_config'] = \
         load_config_file(os.path.join(homepath, ".reviewboardrc"))
+    merge_config()
     cookie_file = os.path.join(homepath, ".post-review-cookies.txt")
 
     args = parse_options(sys.argv[1:])
