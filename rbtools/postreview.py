@@ -2548,7 +2548,7 @@ class GitClient(SCMClient):
             existing_notes = execute(["git", "notes", "show", commit], ignore_errors=True)
             if existing_notes.find(review_url) < 0:
                 # Add new note
-                execute(["git", "notes", "append", "-m", commit_note, commit])
+                execute(["git", "notes", "append", "-m", commit_note, commit], ignore_errors=True)
 
     def get_repository_info(self):
         if not check_install('git --help'):
@@ -2699,7 +2699,7 @@ class GitClient(SCMClient):
         else:
             rev_range = "%s..%s" % (merge_base, self.head_ref)
         
-        commits = [c.strip() for c in execute(["git", "log", r"--pretty=format:%H", rev_range]).split("\n")]
+        commits = filter(lambda commit: len(commit), [c.strip() for c in execute(["git", "log", r"--pretty=format:%H", rev_range]).split("\n")])
         return commits    
 
     def diff(self, args):
