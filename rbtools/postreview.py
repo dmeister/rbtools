@@ -2545,9 +2545,7 @@ class GitClient(SCMClient):
 
         commit_note = "Reviewed at %s" % review_url
         for commit in commits:
-            print "Commit", commit
             existing_notes = execute(["git", "notes", "show", commit], ignore_errors=True)
-            print existing_notes
             if existing_notes.find(review_url) < 0:
                 # Add new note
                 append_result = execute(["git", "notes", "append", "-m", commit_note, commit], ignore_errors=True)
@@ -2724,7 +2722,7 @@ class GitClient(SCMClient):
 
         if options.guess_summary and not options.summary:
             options.summary = execute(["git", "log", "--pretty=format:%s",
-                                       "HEAD^.."], ignore_errors=True).strip()
+                                       "HEAD^.."], ignore_errors=True).partition("\n")[0].strip()
 
         if options.guess_description and not options.description:
             options.description = execute(
