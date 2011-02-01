@@ -2542,13 +2542,17 @@ class GitClient(SCMClient):
     def add_review_note(self, review_url):
         """ Adds a notes to the reviewed commits with the review url """
         commits = self._get_diff_commits()
-        
+
         commit_note = "Reviewed at %s" % review_url
         for commit in commits:
+            print "Commit", commit
             existing_notes = execute(["git", "notes", "show", commit], ignore_errors=True)
+            print existing_notes
             if existing_notes.find(review_url) < 0:
                 # Add new note
-                execute(["git", "notes", "append", "-m", commit_note, commit], ignore_errors=True)
+                append_result = execute(["git", "notes", "append", "-m", commit_note, commit], ignore_errors=True)
+                if append_result.find("Usage") >= 0:
+                    execute(["git", "notes", "edit", "-m", commit_note, commit], ignore_errors=True)
 
     def get_repository_info(self):
         if not check_install('git --help'):
@@ -2698,7 +2702,6 @@ class GitClient(SCMClient):
             rev_range = "%s..%s" % (merge_base, options.parent_branch)
         else:
             rev_range = "%s..%s" % (merge_base, self.head_ref)
-        
         commits = filter(lambda commit: len(commit), [c.strip() for c in execute(["git", "log", r"--pretty=format:%H", rev_range]).split("\n")])
         return commits    
 
