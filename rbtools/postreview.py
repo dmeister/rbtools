@@ -2741,11 +2741,14 @@ class GitClient(SCMClient):
 
         return (diff_lines, parent_diff_lines)
 
-    def make_diff(self, ancestor, commit=""):
+    def make_diff(self, ancestor, commit=None):
         """
         Performs a diff on a particular branch range.
         """
-        rev_range = "%s..%s" % (ancestor, commit)
+        if commit:
+            rev_range = "%s..%s" % (ancestor, commit)
+        else:
+            rev_range = "%s" % ancestor
 
         if self.type == "svn":
             diff_lines = execute(["git", "diff", "--no-color", "--no-prefix",
@@ -2816,33 +2819,24 @@ class GitClient(SCMClient):
 
     def diff_between_revisions(self, revision_range, args, repository_info):
         """Perform a diff between two arbitrary revisions"""
-        if ":" not in revision_range:
-            # only one revision is specified
-            if options.guess_summary and not options.summary:
-                options.summary = execute(
-                    ["git", "log", "--pretty=format:%s", revision_range + ".."],
-                    ignore_errors=True).strip()
 
-            if options.guess_description and not options.description:
-                options.description = execute(
-                    ["git", "log", "--pretty=format:%s%n%n%b", revision_range + ".."],
-                    ignore_errors=True).strip()
-
-            return self.make_diff(revision_range)
+        if ":" not in revision_range:    
+            r1 = "%s~1" % revision_range
+            r2 = "%s" % revision_range
         else:
             r1, r2 = revision_range.split(":")
 
-            if options.guess_summary and not options.summary:
-                options.summary = execute(
+        if options.guess_summary and not options.summary:
+            options.summary = execute(
                     ["git", "log", "--pretty=format:%s", "%s..%s" % (r1, r2)],
-                    ignore_errors=True).strip()
+                    ignore_errors=True).partition("\n")[0].strip()
 
-            if options.guess_description and not options.description:
-                options.description = execute(
+        if options.guess_description and not options.description:
+            options.description = execute(
                     ["git", "log", "--pretty=format:%s%n%n%b", "%s..%s" % (r1, r2)],
                     ignore_errors=True).strip()
 
-            return self.make_diff(r1, r2)
+        return self.make_diff(r1, r2)
 
 
 class PlasticClient(SCMClient):
@@ -3718,6 +3712,9 @@ def main():
         changenum = tool.get_changenum(args)
     else:
         changenum = None
+
+    if len(args) == 1 and not options.revision_range:
+        options.revision_range = args[0]
 
     if options.revision_range:
         diff = tool.diff_between_revisions(options.revision_range, args,
